@@ -1,15 +1,24 @@
+/*global OT, navigator*/
+/*eslint no-undef: ["error"] */
+
 import React from "react";
 import axios from "axios";
 import "./styles.css";
 
-import OT from '@opentok/client';
 import initLayoutContainer from 'opentok-layout-js'
 import { isSupported, MediapipeHelper } from '@vonage/ml-transformers';
 import { MediaProcessor, MediaProcessorConnector } from '@vonage/media-processor';
 
-import Worker from './worker?worker&inline';
+// import Worker from './worker';
+// console.log("Worker", Worker);
+// const worker = new window.Worker('src/worker.js');
+// console.log("worker", worker);
+import worker from "./worker.js";
+import WebWorker from "./workerSetup";
 
 const backendUrl = "http://localhost:3000";
+
+const DEFAULT_BRIGHNESS_LEVEL = 1;
 
 const options = {
   maxRatio: 2/3,             // The narrowest ratio that will be used (default 2x3)
@@ -40,6 +49,7 @@ const options = {
   onLayout: null,            // A function that gets called every time an element is moved or resized, (element, { left, top, width, height }) => {} 
 };
 
+// const mediaPipeHelper = new MediapipeHelper();
 // const mediaProcessor = new MediaProcessor();
 // const transformers = [
 //   new MyTransformer(),
@@ -52,21 +62,78 @@ export default class App extends React.Component {
     super(props);
 
     this.state = {
-      layout: null
+      layoutContainer: null,
+      layout: null,
+      // session info variables
+      apiKey: "",
+      sessionId: "",
+      token: "",
+      session: "",
+      // face detection variables
+      videoInfo: {},
+      padding: {
+        width: 60,
+        height: 80
+      }
     };
 
     this.handleError = this.handleError.bind(this);
-    
+    this.checkMediaStreamSupport = this.checkMediaStreamSupport.bind(this);
+    this.initUserMedia = this.initUserMedia.bind(this);
+    this.initMediaPipeHelper = this.initMediaPipeHelper.bind(this);
+    // this.initMediaPipeHelper = this.initMediaPipeHelper.bind(this);
   }
 
+  fetchWebWorker() {
+    // this.worker.postMessage("Fetch Users");
+
+    this.worker.addEventListener("message", event => {
+      console.log("fetchWebWorker", event)
+    });
+  };
+
   componentDidMount() {
+
+    const mediaProcessor = new MediaProcessor();
+    console.log("componentDidMount mediaProcessor", mediaProcessor);
     const queryParams = new URLSearchParams(window.location.search);
     const jwtToken = queryParams.get("ref");
     const uid = queryParams.get("uid");
     console.log({ jwtToken, uid });
+    
+    this.worker = new WebWorker(worker);
+    console.log(this.worker);
 
     if (jwtToken || uid) {
-      
+      const layoutContainer = document.getElementById("layoutContainer");
+      this.setState({ layoutContainer: layoutContainer });
+      this.setState({ layout: initLayoutContainer(layoutContainer, options) }, () => {
+        this.state.layout.layout(); console.log(this.state)
+      });
+
+      const brightnessLevelSection = document.getElementById('brightnessLevel');
+      const brightnessLevelInput = brightnessLevelSection.getElementsByTagName('input')[0];
+      brightnessLevelInput.value = DEFAULT_BRIGHNESS_LEVEL;
+
+      if (this.checkMediaStreamSupport()) {
+        this.initUserMedia();
+        this.initMediaPipeHelper();
+
+        console.log(this.state);
+
+        this.worker.addEventListener('message', ((msg) => {
+          console.log("message from worker:", msg);
+        }));
+
+        this.worker.postMessage({
+          operation: "init",
+          metaData: JSON.stringify({appId: '123', sourceType: 'test'}),
+          padding: this.state.padding,
+          videoInfo: this.state.videoInfo,
+          brightnessLevel: DEFAULT_BRIGHNESS_LEVEL
+        })
+      }
+
     } else {
       this.handleError("Missing authentication details");
     }
@@ -77,6 +144,53 @@ export default class App extends React.Component {
       alert(error.message ? error.message : error);
     }
   }
+
+  checkMediaStreamSupport() {
+    console.log("checkMediaStreamSupport");
+    if ( typeof MediaStreamTrackProcessor === 'undefined' ||
+         typeof MediaStreamTrackGenerator === 'undefined' ) {
+      alert(
+          'Your browser does not support the experimental MediaStreamTrack API ' +
+          'for Insertable Streams of Media. See the note at the bottom of the ' +
+          'page.');
+      return false;
+    }
+    return true;
+  }
+
+  initUserMedia() {
+    console.log("initUserMedia");
+    // Get webcam track
+    navigator.mediaDevices.getUserMedia({audio: true, video: true}).then((track) => {
+      // Set Media Stream 
+      const videoTrack = track.getVideoTracks()[0];
+      const { width, height, frameRate } = videoTrack.getSettings();
+      this.setState({
+        videoInfo: { width, height, frameRate }
+      });
+    });
+  }
+
+  initMediaPipeHelper() {
+    console.log("initMediaPipeHelper");
+    // mediaPipeHelper.initialize({
+    //   mediaPipeModelConfigArray: [{modelType: "face_detection", options: {
+    //       selfieMode: false,
+    //       minDetectionConfidence: 0.5,
+    //       model: 'short'
+    //     }, 
+    //     listener: (results) => {
+    //       console.log("initMediaPipeHelper listener results", results);
+    //       if (results && results.detections.length !== 0) {
+    //         worker.postMessage({
+    //           operation: "faceDetectionResult",
+    //           result: results.detections[0].boundingBox
+    //         })
+    //       }
+    //     }}]
+    // })
+  }
+
 
   
   render() {
@@ -127,3 +241,18 @@ export default class App extends React.Component {
     );
   }
 }
+
+
+
+// export default class App extends React.Component {
+//   constructor(props) {
+//     super(props);
+
+//   }
+
+//   render() {
+//     return (
+//       <div>Hi</div>
+//     )
+//   }
+// }
