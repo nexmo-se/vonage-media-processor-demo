@@ -1,9 +1,13 @@
 require("dotenv").config();
 
-const PORT = process.env.PORT;
-const PROJECT_API_KEY = process.env.PROJECT_API_KEY;
-const PROJECT_API_SECRET = process.env.PROJECT_API_SECRET;
-const APP_BASE_URL = process.env.APP_BASE_URL; // TODO: change before deployment
+// For non-Neru deployment
+// const PORT = process.env.PORT;
+// const PROJECT_API_KEY = process.env.PROJECT_API_KEY;
+// const PROJECT_API_SECRET = process.env.PROJECT_API_SECRET;
+// const BASE_URL = process.env.BASE_URL;
+
+const PORT = process.env.NERU_APP_PORT;
+const { PROJECT_API_KEY, PROJECT_API_SECRET, BASE_URL } = JSON.parse(process.env.NERU_CONFIGURATIONS);
 
 var express = require('express');
 var cors = require('cors');
@@ -41,8 +45,12 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "build", "index.html"));
 });
 
+app.get("/up", (req, res) => {
+  res.sendStatus(200);
+});
+
 app.get('/_/health', async (req, res) => {
-    res.sendStatus(200);
+  res.sendStatus(200);
 });
 
 app.post('/init', async (req, res, next) => {
@@ -71,7 +79,7 @@ app.post('/init', async (req, res, next) => {
     } else {
       roomId = uid;
     }
-    let roomLink = `${APP_BASE_URL}?uid=${roomId}`;
+    let roomLink = `${BASE_URL}/?uid=${roomId}`;
 
     let result = await findRoom(roomId, role);
     if (result.code) {
@@ -89,6 +97,7 @@ app.post('/init', async (req, res, next) => {
     console.log(`Token created`);
 
     res.json({
+      baseUrl: BASE_URL,
       apiKey: PROJECT_API_KEY,
       sessionId: room.sessionId,
       token, roomLink, roomId

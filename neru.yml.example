@@ -1,0 +1,17 @@
+project:
+    name: application-name
+instance:
+    name: dev
+    runtime: nodejs16
+    region: aws.region
+    application-id: 11111111-2222-3333-4444-555555555555
+    entrypoint: [npm, start]
+    capabilities:
+        - voice
+    configurations:
+        BASE_URL: "https://neru-1234abcd-application-name.region.serverless.vonage.com"
+        PROJECT_API_KEY: "12345678"
+        PROJECT_API_SECRET: "1234567890123456789012345678901456789012"
+debug:
+    name: debug
+    entrypoint: [npm, start]

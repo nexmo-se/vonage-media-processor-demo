@@ -1,10 +1,3 @@
-// import React from "react";
-// import ReactDOM from "react-dom";
-// import App from "./App";
-// import registerServiceWorker from "./registerServiceWorker";
-
-// ReactDOM.render(<App />, document.getElementById("root"));
-
 import Axios from "axios";
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -16,9 +9,9 @@ import './index.css';
 
 import {
   SAMPLE_SERVER_BASE_URL,
-  API_KEY,
-  SESSION_ID,
-  TOKEN
+  // API_KEY,
+  // SESSION_ID,
+  // TOKEN
 } from './config';
 
 function renderApp(credentials, roomDetails) {
@@ -28,20 +21,23 @@ function renderApp(credentials, roomDetails) {
   );
 }
 
-if (API_KEY && TOKEN && SESSION_ID) {
-  renderApp({
-    apiKey: API_KEY,
-    sessionId: SESSION_ID,
-    token: TOKEN,
-  }, {});
-} else {
+// if (API_KEY && TOKEN && SESSION_ID) {
+//   renderApp({
+//     apiKey: API_KEY,
+//     sessionId: SESSION_ID,
+//     token: TOKEN,
+//   }, {});
+// } else {
   const queryParams = new URLSearchParams(window.location.search);
   const jwtToken = queryParams.get("ref");
   const uid = queryParams.get("uid");
   console.log({ jwtToken, uid });
+
+  const url = SAMPLE_SERVER_BASE_URL + "/init";
+  console.log({ url });
   
   Axios.post(
-    SAMPLE_SERVER_BASE_URL + "/init",
+    url,
     { jwtToken, uid }
   )
   .then((result) => {
@@ -58,12 +54,13 @@ if (API_KEY && TOKEN && SESSION_ID) {
       };
       renderApp(credentials, roomDetails);
     } else {
-      console.error('Failed to get session credentials');
-      alert('Failed to get opentok sessionId and token.');
+      console.error('Failed to /init', result);
+      alert('Error: ');
     }
   })
   .catch((err) => {
+    console.log("/init error", err);
     console.error('Failed to get session credentials', err);
     alert('Failed to get opentok sessionId and token. Make sure you have updated the config.js file.');
   });
-}
+// }

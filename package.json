@@ -21,7 +21,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "start": "yarn run build && (cd server && yarn start)"
+    "dev": "yarn build && (cd server && npm run start)",
+    "start": "cd server && npm run start"
   },
   "eslintConfig": {
     "extends": "react-app"

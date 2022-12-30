@@ -1,18 +1,17 @@
 project:
-    name: concert-ticket
+    name: vonage-media-processor-demo
 instance:
     name: dev
     runtime: nodejs16
     region: aws.apse1
-    application-id: 02749606-015a-431d-9efc-a7ad21c6e83b
+    application-id: 42f9761c-4842-4c43-945d-295d28e80a64
     entrypoint: [npm, start]
     capabilities:
         - voice
-        - messaging
     configurations:
-        contact:
-            number: "44700000000"
-            type: phone
+        BASE_URL: "https://neru-d0cab68b-vonage-media-processor-demo-dev.apse1.serverless.vonage.com"
+        PROJECT_API_KEY: "47557921"
+        PROJECT_API_SECRET: "3db78c3a9c07e1ef11e7bfa4d18a7b42fb268d83"
 debug:
-    name: concert
-    entrypoint: [npm, run, dev]
+    name: debug
+    entrypoint: [npm, start]
