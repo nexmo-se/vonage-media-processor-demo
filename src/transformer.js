@@ -44,27 +44,44 @@ export default class Transformer {
 
     // console.log({faceDetectionResult: this.faceDetectionResult, canvas: this.canvas_});
 
-    let faceHeight = this.canvas_.height * this.faceDetectionResult.boundingBox.height;
     let faceWidth = this.canvas_.width * this.faceDetectionResult.boundingBox.width;
+    let faceHeight = this.canvas_.height * this.faceDetectionResult.boundingBox.height;
     // console.log({faceHeight, faceWidth});
 
-    let hatWidth = faceWidth * 0.5;
+    // let hatWidth = faceWidth * 0.5;
+    // let hatHeight = faceHeight * 0.6;
+    // // console.log({hatWidth, hatHeight});
+
+    // let rightEarTragion = {
+    //   width: this.faceDetectionResult.landmarks[4].x * this.canvas_.width,
+    //   height: this.faceDetectionResult.landmarks[4].y * this.canvas_.height
+    // };
+    // let leftEarTragion = {
+    //   width: this.faceDetectionResult.landmarks[5].x * this.canvas_.width,
+    //   height: this.faceDetectionResult.landmarks[5].y * this.canvas_.height
+    // };
+    // // console.log({rightEarTragion, leftEarTragion});
+
+    // let xpos = leftEarTragion.width - (faceWidth / 2) - 80;
+    // let ypos = leftEarTragion.height - faceHeight - 80;
+    // // console.log({xpos, ypos});
+
+    let rightEye = {
+      width: this.faceDetectionResult.landmarks[0].x * this.canvas_.width,
+      height: this.faceDetectionResult.landmarks[0].y * this.canvas_.height
+    };
+    let leftEye = {
+      width: this.faceDetectionResult.landmarks[1].x * this.canvas_.width,
+      height: this.faceDetectionResult.landmarks[1].y * this.canvas_.height
+    };
+    // console.log({rightEye, leftEye});
+
+    let hatWidth = leftEye.width - rightEye.width;
     let hatHeight = faceHeight * 0.6;
     // console.log({hatWidth, hatHeight});
 
-    let rightEarTragion = {
-      width: this.faceDetectionResult.landmarks[4].x * this.canvas_.width,
-      height: this.faceDetectionResult.landmarks[4].y * this.canvas_.height
-    };
-    let leftEarTragion = {
-      width: this.faceDetectionResult.landmarks[5].x * this.canvas_.width,
-      height: this.faceDetectionResult.landmarks[5].y * this.canvas_.height
-    };
-    // console.log({rightEarTragion, leftEarTragion});
-
-    let xpos = leftEarTragion.width - (faceWidth / 2) - 80;
-    let ypos = leftEarTragion.height - faceHeight - 80;
-    // console.log({xpos, ypos});
+    let xpos = rightEye.width;
+    let ypos = rightEye.height - (hatHeight * 2);
 
     this.ctx_.drawImage(this.image2, xpos, ypos, hatWidth, hatHeight);
   }
@@ -82,6 +99,8 @@ export default class Transformer {
       this.canvas_.width = frame.displayWidth;
       this.canvas_.height = frame.displayHeight;
       const timestamp = frame.timestamp;
+
+      // console.log("this.faceDetectionResult", this.faceDetectionResult);
 
       if (this.transformType === "logo") {
         // === Call function to draw Vonage Logo on bottom left of the VideoFrame
@@ -102,7 +121,9 @@ export default class Transformer {
           postMessage(image);
   
           this.ctx_.putImageData(imageData, 0, 0);
-          this.drawHat();
+          if (this.faceDetectionResult){
+            this.drawHat();
+          }
           controller.enqueue(new VideoFrame(this.canvas_, { timestamp, alpha: 'discard' }));
         }).catch(e => {
           controller.enqueue(frame);

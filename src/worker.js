@@ -38,6 +38,7 @@ onmessage = async (event) => {
       }
 
       case 'faceDetectionResult': {
+        // console.log("worker | faceDetectionResult", event.data)
         faceDetectionResult = event.data.result;
         transformer.setFaceDetectionResult(faceDetectionResult);
 

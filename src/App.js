@@ -24,6 +24,7 @@ export default class App extends React.Component {
       connection: 'Connecting',
       publishVideo: true,
       streamPublished: false,
+      videoReady: false,
       transformType: ""
     };
 
@@ -117,6 +118,9 @@ export default class App extends React.Component {
     if (OT.hasMediaProcessorSupport()) {
       this.opentokPublisher
         .setVideoMediaProcessorConnector(mediaProcessorConnector)
+        .then(() => {
+          this.setState({ videoReady: true });
+        })
         .catch((e) => {
           console.error(e);
         });
@@ -152,6 +156,7 @@ export default class App extends React.Component {
       },
       sessionDisconnected: () => {
         this.setState({ connection: 'Disconnected' });
+        this.setState({ videoReady: false });
       },
       sessionReconnected: () => {
         this.setState({ connection: 'Reconnected' });
@@ -191,12 +196,6 @@ export default class App extends React.Component {
 
   }
 
-  isButtonDisabled = (transformType) => {
-    if (this.state.transformType === transformType) {
-      return true;
-    }
-    return false;
-  }
   changeTransformType = (transformType) => {
     this.setState({ transformType: transformType });
     this.mediaProcessor.changeTransformType(transformType);
@@ -209,7 +208,7 @@ export default class App extends React.Component {
   render() {
     const { apiKey, sessionId, token } = this.props.credentials;
     const { roomLink, roomId } = this.props.roomDetails;
-    const { error, connection, publishVideo, streamPublished, transformType } = this.state;
+    const { error, connection, publishVideo, streamPublished, videoReady, transformType } = this.state;
     
     return (
       <div>
@@ -231,13 +230,13 @@ export default class App extends React.Component {
           <div id="publisher"></div>
           <div id="transformTypeWrapper">
             <span id="transformType">Transform Type</span>
-            <button onClick={() => this.changeTransformType("logo")} disabled={transformType === "logo"}>
+            <button onClick={() => this.changeTransformType("logo")} disabled={videoReady ? (transformType === "logo"): true}>
               Add Vonage Logo
             </button>
-            <button onClick={() => this.changeTransformType("hat")} disabled={transformType === "hat"}>
+            <button onClick={() => this.changeTransformType("hat")} disabled={videoReady ? (transformType === "hat"): true}>
               Add Party Hat
             </button>
-            <button onClick={() => this.changeTransformType("")} disabled={transformType === ""}>
+            <button onClick={() => this.changeTransformType("")} disabled={videoReady ? (transformType === ""): true}>
               None
             </button>
           </div>
