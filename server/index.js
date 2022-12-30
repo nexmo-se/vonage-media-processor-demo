@@ -1,51 +1,9 @@
-// require("dotenv").config();
-
-// const PORT = process.env.PORT;
-// const PROJECT_API_KEY = process.env.PROJECT_API_KEY;
-// const PROJECT_API_SECRET = process.env.PROJECT_API_SECRET;
-
-// const atob = require('atob');
-// const jwt = require('jsonwebtoken');
-// const bodyParser = require('body-parser');
-// const path = require("path");
-// const express = require("express");
-// const app = express(); // create express app
-
-// app.use(express.static(path.join(__dirname, "..", "build")));
-// app.use(express.static("public"));
-// app.use(bodyParser.json());
-
-// // TODO: change before deployment
-// // const APP_BASE_URL = "https://vids.vonage.com/media-processor-demo";
-// const APP_BASE_URL = "https://f0c3-116-87-51-142.ngrok.io";
-// let db = {
-//   "rooms": []
-// };
-
-// app.get("/", (req, res) => {
-//   res.sendFile(path.join(__dirname, "..", "build", "index.html"));
-// });
-
-// app.post("/session", (req, res) => {
-//   console.log("/session", req.body);
-//   res.json({
-//     apiKey: "",
-//     sessionId: "",
-//     token: ""
-//   })
-// });
-
-// app.listen(PORT, () => {
-//   console.log(`Server started on port ${PORT}`);
-// });
-
-
-
 require("dotenv").config();
 
 const PORT = process.env.PORT;
 const PROJECT_API_KEY = process.env.PROJECT_API_KEY;
 const PROJECT_API_SECRET = process.env.PROJECT_API_SECRET;
+const APP_BASE_URL = process.env.APP_BASE_URL; // TODO: change before deployment
 
 var express = require('express');
 var cors = require('cors');
@@ -75,15 +33,16 @@ const Util = require('util');
 const OpenTok = require("opentok");
 const opentok = new OpenTok(PROJECT_API_KEY, PROJECT_API_SECRET);
 
-// TODO: change before deployment
-// const APP_BASE_URL = "https://vids.vonage.com/media-processor-demo";
-const APP_BASE_URL = "https://c57a-116-87-51-142.ngrok.io";
 let db = {
   "rooms": []
 };
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "build", "index.html"));
+});
+
+app.get('/_/health', async (req, res) => {
+    res.sendStatus(200);
 });
 
 app.post('/init', async (req, res, next) => {

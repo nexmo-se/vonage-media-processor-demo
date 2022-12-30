@@ -1,152 +1,101 @@
 /*global OT, navigator*/
 /*eslint no-undef: ["error"] */
 
+import Axios from "axios";
 import React from "react";
-import axios from "axios";
-import "./styles.css";
+import { OTSession, OTPublisher, OTStreams, OTSubscriber } from 'opentok-react';
 
-import initLayoutContainer from 'opentok-layout-js'
+import "./index.css";
+
 import { isSupported, MediapipeHelper } from '@vonage/ml-transformers';
 import { MediaProcessor, MediaProcessorConnector } from '@vonage/media-processor';
 
-// import Worker from './worker';
-// console.log("Worker", Worker);
-// const worker = new window.Worker('src/worker.js');
-// console.log("worker", worker);
-import worker from "./worker.js";
-import WebWorker from "./workerSetup";
-
-const backendUrl = "http://localhost:3000";
-
-const DEFAULT_BRIGHNESS_LEVEL = 1;
-
-const options = {
-  maxRatio: 2/3,             // The narrowest ratio that will be used (default 2x3)
-  minRatio: 16/9,            // The widest ratio that will be used (default 16x9)
-  fixedRatio: true,         // If this is true then the aspect ratio of the video is maintained and minRatio and maxRatio are ignored (default false)
-  scaleLastRow: false,        // If there are less elements on the last row then we can scale them up to take up more space
-  alignItems: 'center',      // Can be 'start', 'center' or 'end'. Determines where to place items when on a row or column that is not full
-  bigClass: "OT_big",        // The class to add to elements that should be sized bigger
-  bigPercentage: 0.8,        // The maximum percentage of space the big ones should take up
-  minBigPercentage: 0,       // If this is set then it will scale down the big space if there is left over whitespace down to this minimum size
-  bigFixedRatio: false,      // fixedRatio for the big ones
-  bigScaleLastRow: true,     // scale last row for the big elements
-  bigAlignItems: 'center',   // How to align the big items
-  smallAlignItems: 'center', // How to align the small row or column of items if there is a big one
-  maxWidth: Infinity,        // The maximum width of the elements
-  maxHeight: Infinity,       // The maximum height of the elements
-  smallMaxWidth: Infinity,   // The maximum width of the small elements
-  smallMaxHeight: Infinity,  // The maximum height of the small elements
-  bigMaxWidth: Infinity,     // The maximum width of the big elements
-  bigMaxHeight: Infinity,    // The maximum height of the big elements
-  bigMaxRatio: 3/2,          // The narrowest ratio to use for the big elements (default 2x3)
-  bigMinRatio: 9/16,         // The widest ratio to use for the big elements (default 16x9)
-  bigFirst: true,            // Whether to place the big one in the top left (true) or bottom right (false).
-                             // You can also pass 'column' or 'row' to change whether big is first when you are in a row (bottom) or a column (right) layout
-  animate: true,             // Whether you want to animate the transitions using jQuery (not recommended, use CSS transitions instead)
-  window: window,            // Lets you pass in your own window object which should be the same window that the element is in
-  ignoreClass: 'OT_ignore',  // Elements with this class will be ignored and not positioned. This lets you do things like picture-in-picture
-  onLayout: null,            // A function that gets called every time an element is moved or resized, (element, { left, top, width, height }) => {} 
-};
-
-// const mediaPipeHelper = new MediapipeHelper();
-// const mediaProcessor = new MediaProcessor();
-// const transformers = [
-//   new MyTransformer(),
-// ];
-// mediaProcessor.setTransformers(transformers);
-// const connector = new MediaProcessorConnector(mediaProcessor);
+import { WorkerMediaProcessor } from './worker-media-processor.js';
 
 export default class App extends React.Component {
   constructor(props) {
     super(props);
 
+    const { apiKey, sessionId, token } = this.props.credentials;
+    const { roomLink, roomId } = this.props.roomDetails;
+
     this.state = {
-      layoutContainer: null,
-      layout: null,
-      // session info variables
-      apiKey: "",
-      sessionId: "",
-      token: "",
-      session: "",
-      // face detection variables
-      videoInfo: {},
-      padding: {
-        width: 60,
-        height: 80
-      }
+      error: null,
+      connection: 'Connecting',
+      publishVideo: true,
+      streamPublished: false,
+      transformType: ""
     };
 
-    this.handleError = this.handleError.bind(this);
-    this.checkMediaStreamSupport = this.checkMediaStreamSupport.bind(this);
-    this.initUserMedia = this.initUserMedia.bind(this);
-    this.initMediaPipeHelper = this.initMediaPipeHelper.bind(this);
-    // this.initMediaPipeHelper = this.initMediaPipeHelper.bind(this);
+    this.session = null;
+    this.publisher = null;
+
+    this.mediaProcessor = null;
+    this.mediaProcessorConnector = null;
+
+    this.publisherEventHandlers = {
+      accessDenied: () => {
+        console.log('User denied access to media source');
+      },
+      streamCreated: () => {
+        console.log('Publisher stream created');
+      },
+      streamDestroyed: ({ reason }) => {
+        console.log(`Publisher stream destroyed because: ${reason}`);
+      },
+    };
+
+    this.subscriberEventHandlers = {
+      videoEnabled: () => {
+        console.log('Subscriber video enabled');
+      },
+      videoDisabled: () => {
+        console.log('Subscriber video disabled');
+      },
+    };
   }
 
-  fetchWebWorker() {
-    // this.worker.postMessage("Fetch Users");
+  onSessionError = error => {
+    this.setState({ error });
+  };
 
-    this.worker.addEventListener("message", event => {
-      console.log("fetchWebWorker", event)
-    });
+  onPublish = () => {
+    console.log('Publish Success');
+  };
+
+  onPublishError = error => {
+    this.setState({ error });
+  };
+
+  onSubscribe = () => {
+    console.log('Subscribe Success');
+  };
+
+  onSubscribeError = error => {
+    this.setState({ error });
+  };
+
+  toggleVideo = () => {
+    this.setState(state => ({
+      publishVideo: !state.publishVideo,
+    }));
   };
 
   componentDidMount() {
-
-    const mediaProcessor = new MediaProcessor();
-    console.log("componentDidMount mediaProcessor", mediaProcessor);
-    const queryParams = new URLSearchParams(window.location.search);
-    const jwtToken = queryParams.get("ref");
-    const uid = queryParams.get("uid");
-    console.log({ jwtToken, uid });
-    
-    this.worker = new WebWorker(worker);
-    console.log(this.worker);
-
-    if (jwtToken || uid) {
-      const layoutContainer = document.getElementById("layoutContainer");
-      this.setState({ layoutContainer: layoutContainer });
-      this.setState({ layout: initLayoutContainer(layoutContainer, options) }, () => {
-        this.state.layout.layout(); console.log(this.state)
-      });
-
-      const brightnessLevelSection = document.getElementById('brightnessLevel');
-      const brightnessLevelInput = brightnessLevelSection.getElementsByTagName('input')[0];
-      brightnessLevelInput.value = DEFAULT_BRIGHNESS_LEVEL;
-
-      if (this.checkMediaStreamSupport()) {
-        this.initUserMedia();
-        this.initMediaPipeHelper();
-
-        console.log(this.state);
-
-        this.worker.addEventListener('message', ((msg) => {
-          console.log("message from worker:", msg);
-        }));
-
-        this.worker.postMessage({
-          operation: "init",
-          metaData: JSON.stringify({appId: '123', sourceType: 'test'}),
-          padding: this.state.padding,
-          videoInfo: this.state.videoInfo,
-          brightnessLevel: DEFAULT_BRIGHNESS_LEVEL
-        })
-      }
-
-    } else {
-      this.handleError("Missing authentication details");
+    const { apiKey, sessionId, token } = this.props.credentials;
+    if (apiKey && sessionId && token) {
+      this.initWorker();
     }
   }
 
-  handleError(error) {
-    if (error) {
-      alert(error.message ? error.message : error);
+  async initWorker() {
+    if (await this.checkMediaStreamSupport()) {
+      this.initializeSession();
+      return;
     }
   }
 
-  checkMediaStreamSupport() {
-    console.log("checkMediaStreamSupport");
+  async checkMediaStreamSupport() {
     if ( typeof MediaStreamTrackProcessor === 'undefined' ||
          typeof MediaStreamTrackGenerator === 'undefined' ) {
       alert(
@@ -158,101 +107,158 @@ export default class App extends React.Component {
     return true;
   }
 
-  initUserMedia() {
-    console.log("initUserMedia");
-    // Get webcam track
-    navigator.mediaDevices.getUserMedia({audio: true, video: true}).then((track) => {
-      // Set Media Stream 
-      const videoTrack = track.getVideoTracks()[0];
-      const { width, height, frameRate } = videoTrack.getSettings();
-      this.setState({
-        videoInfo: { width, height, frameRate }
-      });
+  transformStream() {
+    const mediaProcessor = new WorkerMediaProcessor();
+    this.mediaProcessor = mediaProcessor;
+
+    const mediaProcessorConnector = new MediaProcessorConnector(mediaProcessor);
+    this.mediaProcessorConnector = mediaProcessorConnector;
+
+    if (OT.hasMediaProcessorSupport()) {
+      this.opentokPublisher
+        .setVideoMediaProcessorConnector(mediaProcessorConnector)
+        .catch((e) => {
+          console.error(e);
+        });
+    } else {
+      console.log('Browser does not support media processors');
+    }
+  }
+
+  async initializeSession() {
+    const { apiKey, sessionId, token } = this.props.credentials;
+    // console.log("initializeSession", { apiKey, sessionId, token });
+
+    const session = OT.initSession(apiKey, sessionId);
+    this.opentokSession = session;
+
+    // Subscribe to a newly created stream
+    session.on({
+      streamCreated: (event) => {
+        const subscriberOptions = {
+          insertMode: 'append',
+          width: '100%',
+          height: '100%'
+        };
+        session.subscribe(
+          event.stream,
+          'subscriber',
+          subscriberOptions,
+          handleError
+        );
+      },
+      sessionConnected: () => {
+        this.setState({ connection: 'Connected' });
+      },
+      sessionDisconnected: () => {
+        this.setState({ connection: 'Disconnected' });
+      },
+      sessionReconnected: () => {
+        this.setState({ connection: 'Reconnected' });
+      },
+      sessionReconnecting: () => {
+        this.setState({ connection: 'Reconnecting' });
+      },
     });
+
+    // initialize the publisher
+    const publisherOptions = {
+      insertMode: 'append',
+      width: '100%',
+      height: '100%'
+    };
+    const publisher = await OT.initPublisher(
+      'publisher',
+      publisherOptions,
+      (error) => {
+        if (error) {
+          console.warn(error);
+        }
+      }
+    );
+    this.opentokPublisher = publisher;
+
+    // Connect to the session
+    session.connect(token, async (error) => {
+      if (error) {
+        await handleError(error);
+      } else {
+        // If the connection is successful, publish the publisher to the session
+        // and transform stream
+        session.publish(publisher, () => this.transformStream(publisher));
+      }
+    });
+
   }
 
-  initMediaPipeHelper() {
-    console.log("initMediaPipeHelper");
-    // mediaPipeHelper.initialize({
-    //   mediaPipeModelConfigArray: [{modelType: "face_detection", options: {
-    //       selfieMode: false,
-    //       minDetectionConfidence: 0.5,
-    //       model: 'short'
-    //     }, 
-    //     listener: (results) => {
-    //       console.log("initMediaPipeHelper listener results", results);
-    //       if (results && results.detections.length !== 0) {
-    //         worker.postMessage({
-    //           operation: "faceDetectionResult",
-    //           result: results.detections[0].boundingBox
-    //         })
-    //       }
-    //     }}]
-    // })
+  isButtonDisabled = (transformType) => {
+    if (this.state.transformType === transformType) {
+      return true;
+    }
+    return false;
+  }
+  changeTransformType = (transformType) => {
+    this.setState({ transformType: transformType });
+    this.mediaProcessor.changeTransformType(transformType);
   }
 
-
+  copyRoomLink = () => {
+    navigator.clipboard.writeText(this.props.roomDetails.roomLink);
+  }
   
   render() {
+    const { apiKey, sessionId, token } = this.props.credentials;
+    const { roomLink, roomId } = this.props.roomDetails;
+    const { error, connection, publishVideo, streamPublished, transformType } = this.state;
+    
     return (
-      <div className="vonage-media-processor-demo">
-        <div id="loader" class="is-loading">
-          <h1 id="instruction">Please look at the camera.</h1>
-        </div>
-        <div id="layoutContainer">
-          <video id="croppedVideo" width="300px" height="300px" autoplay muted></video>
-        </div>
-        <section id="popOverWrapper">
-          <button id="popOverTitle">Settings</button>
-          <section id="popOverContent">
-            <div id="zoom">
-              <button id="autoZoomButton" class="enable">Auto Zoom</button>
-              <div id="fixedRatio" class="is-shown">
-                <input type="checkbox" name="fixedRatio" />
-                <label for="fixedRatio"> Fixed Ratio</label>
-              </div>
-              <div id="faceTracking" class="is-shown">
-                <input type="checkbox" name="faceTracking" />
-                <label for="faceTracking"> Face Tracking</label>
-              </div>
-              <div id="widthPadding" class="is-shown">
-                <label>Width Padding:</label>
-                <input type="range" disabled value="0" step="1" min="0" max="80" />
-              </div>
-              <div id="heightPadding" class="is-shown">
-                <label>Height Padding:</label>
-                <input type="range" disabled value="0" step="1" min="0" max="80" />
-              </div>
+      <div>
+        <div id="videos">
+          <h1>Vonage Media Processor Demo</h1>
+
+          <div id="divider"></div>
+
+          <h2>You</h2>
+
+          <div id="sessionStatus">Room ID: {roomId}</div>
+          <div id="sessionStatus">Session Status: {connection}</div>
+          {error ? (
+            <div className="error">
+              <strong>Error:</strong> {error}
             </div>
-            <div id="brightness">
-              <button id="adjustBrightnessButton" class="enable">Adjust Brightness</button>
-              <div id="autoBrightness" class="is-shown">
-                <input type="checkbox" name="autoBrightness" checked />
-                <label for="autoBrightness">Auto Adjust</label>
-              </div>
-              <div id="brightnessLevel">
-                <label>Brightness Level:</label>
-                <input type="range" value="1" step="0.1" min="0.1" max="2" />
-              </div>
-            </div>
-          </section>
-        </section>
+          ) : null}
+          
+          <div id="publisher"></div>
+          <div id="transformTypeWrapper">
+            <span id="transformType">Transform Type</span>
+            <button onClick={() => this.changeTransformType("logo")} disabled={transformType === "logo"}>
+              Add Vonage Logo
+            </button>
+            <button onClick={() => this.changeTransformType("hat")} disabled={transformType === "hat"}>
+              Add Party Hat
+            </button>
+            <button onClick={() => this.changeTransformType("")} disabled={transformType === ""}>
+              None
+            </button>
+          </div>
+          <div id="otherToolsWrapper">
+            <button onClick={this.copyRoomLink}>
+              Copy Room Link 
+            </button>
+          </div>
+
+          <div id="divider"></div>
+
+          <h2>Other Participants</h2>
+          <div id="subscriber"></div>
+        </div>
       </div>
     );
   }
 }
 
-
-
-// export default class App extends React.Component {
-//   constructor(props) {
-//     super(props);
-
-//   }
-
-//   render() {
-//     return (
-//       <div>Hi</div>
-//     )
-//   }
-// }
+function handleError(error) {
+  if (error) {
+    alert(error.message ? error.message : error);
+  }
+}

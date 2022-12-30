@@ -1,0 +1,70 @@
+body {
+  background-color: #ddd;
+  font-size: 1em;
+  font-family: Source Sans Pro,sans-serif;
+}
+
+h1 {
+  font-size: 1.6em;
+  margin: 20px 0;
+}
+h2 {
+  font-size: 1.4em;
+}
+
+.vonage-media-processor-demo {
+  padding: 20px 30px;
+}
+
+#publisher, #subscriber {
+  height: 400px;
+  width: 50%;
+}
+
+#sessionStatus {
+  margin-bottom: 5px;
+}
+
+#transformTypeWrapper, #otherToolsWrapper {
+  margin-top: 5px;
+}
+
+#transformType {
+  margin-right: 20px;
+}
+
+#divider {
+  width: 100%;
+  height: 5px;
+  background-color: black;
+  margin: 20px 0 0;
+}
+
+button {
+  border-radius: 6px;
+  background: black;
+  color: #fff;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.9em;
+  padding: 8px 14px;
+  transition: all .3s;
+  cursor: pointer;
+  height: 40px;
+  border: none;
+  margin-right: 10px;
+}
+button:hover {
+  background: #43474b
+}
+button:disabled,
+button[disabled]{
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+}
+
+a {
+  color: #fff !important;
+  text-decoration: none;
+}

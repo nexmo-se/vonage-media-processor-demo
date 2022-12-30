@@ -1,0 +1,18 @@
+project:
+    name: concert-ticket
+instance:
+    name: dev
+    runtime: nodejs16
+    region: aws.apse1
+    application-id: 02749606-015a-431d-9efc-a7ad21c6e83b
+    entrypoint: [npm, start]
+    capabilities:
+        - voice
+        - messaging
+    configurations:
+        contact:
+            number: "44700000000"
+            type: phone
+debug:
+    name: concert
+    entrypoint: [npm, run, dev]
