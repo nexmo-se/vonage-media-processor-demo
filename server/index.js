@@ -1,14 +1,17 @@
 require("dotenv").config();
 
 // For non-Neru deployment
-const PORT = process.env.PORT;
-const PROJECT_API_KEY = process.env.PROJECT_API_KEY;
-const PROJECT_API_SECRET = process.env.PROJECT_API_SECRET;
-const BASE_URL = process.env.BASE_URL;
+// const PORT = process.env.PORT;
+// const PROJECT_API_KEY = process.env.PROJECT_API_KEY;
+// const PROJECT_API_SECRET = process.env.PROJECT_API_SECRET;
+// const BASE_URL = process.env.BASE_URL;
 
 // For Neru deployment
-// const PORT = process.env.NERU_APP_PORT;
-// const { PROJECT_API_KEY, PROJECT_API_SECRET, BASE_URL } = JSON.parse(process.env.NERU_CONFIGURATIONS);
+const PORT = process.env.NERU_APP_PORT;
+const { PROJECT_API_KEY, PROJECT_API_SECRET, BASE_URL } = JSON.parse(process.env.NERU_CONFIGURATIONS);
+
+const VERSION = "301220222128";
+console.log("VERSION ", VERSION);
 
 var express = require('express');
 var cors = require('cors');

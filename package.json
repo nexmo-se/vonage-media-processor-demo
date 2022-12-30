@@ -17,6 +17,7 @@
     "url-parse": "1.4.3"
   },
   "scripts": {
+    "deployneru": "yarn build && neru deploy",
     "start-client": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
