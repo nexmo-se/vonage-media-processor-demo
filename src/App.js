@@ -169,8 +169,9 @@ export default class App extends React.Component {
     // initialize the publisher
     const publisherOptions = {
       insertMode: 'append',
-      width: '100%',
-      height: '100%'
+      width: 640,
+      height: 480,
+      resolution: "640x480"
     };
     const publisher = await OT.initPublisher(
       'publisher',

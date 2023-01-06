@@ -16,9 +16,10 @@ h2 {
   padding: 20px 30px;
 }
 
-#publisher, #subscriber {
-  height: 400px;
-  width: 50%;
+#publisher, 
+#subscriber {
+  height: 480px;
+  width: 640px;
 }
 
 #sessionStatus {

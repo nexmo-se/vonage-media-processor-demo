@@ -32,7 +32,21 @@ export default class Transformer {
         .then(r => r.blob());
       this.image1 = await createImageBitmap(imgblob);
     }
-    this.ctx_.drawImage(this.image1, 1080, 550, 150, 150);
+    //this.ctx_.drawImage(this.image1, 1080, 550, 150, 150);
+
+    let logoScaling = 0.25;
+    let paddingScaling = 0.02;
+
+    let logoWidth = this.canvas_.height * logoScaling;
+    let logoHeight = logoWidth;
+
+    let padding = this.canvas_.height * paddingScaling;
+
+    let xpos = this.canvas_.width - logoWidth - padding;
+    let ypos = this.canvas_.height - logoHeight - padding;
+    console.log({ canvas: this.canvas_, xpos, ypos, logoWidth, logoHeight, padding });
+
+    this.ctx_.drawImage(this.image1, parseInt(xpos), parseInt(ypos), parseInt(logoWidth), parseInt(logoHeight));
   }
 
   async drawHat() {
@@ -47,24 +61,6 @@ export default class Transformer {
     let faceWidth = this.canvas_.width * this.faceDetectionResult.boundingBox.width;
     let faceHeight = this.canvas_.height * this.faceDetectionResult.boundingBox.height;
     // console.log({faceHeight, faceWidth});
-
-    // let hatWidth = faceWidth * 0.5;
-    // let hatHeight = faceHeight * 0.6;
-    // // console.log({hatWidth, hatHeight});
-
-    // let rightEarTragion = {
-    //   width: this.faceDetectionResult.landmarks[4].x * this.canvas_.width,
-    //   height: this.faceDetectionResult.landmarks[4].y * this.canvas_.height
-    // };
-    // let leftEarTragion = {
-    //   width: this.faceDetectionResult.landmarks[5].x * this.canvas_.width,
-    //   height: this.faceDetectionResult.landmarks[5].y * this.canvas_.height
-    // };
-    // // console.log({rightEarTragion, leftEarTragion});
-
-    // let xpos = leftEarTragion.width - (faceWidth / 2) - 80;
-    // let ypos = leftEarTragion.height - faceHeight - 80;
-    // // console.log({xpos, ypos});
 
     let rightEye = {
       width: this.faceDetectionResult.landmarks[0].x * this.canvas_.width,
