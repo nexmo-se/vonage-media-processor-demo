@@ -11,6 +11,11 @@ export default class Transformer {
       this.canvas_ = null;
       this.ctx_ = null;
 
+      this.hatCurrentWidth = 0;
+      this.hatCurrentHeight = 0;
+      this.hatCurrentXpos = 0;
+      this.hatCurrentYpos = 0;
+
       this.transformType = "";
       
       this.image1 = null;
@@ -72,12 +77,42 @@ export default class Transformer {
     };
     // console.log({rightEye, leftEye});
 
+    const posTreshold = 10, sizeTreshold = 5;
+
+    // ---
+
     let hatWidth = leftEye.width - rightEye.width;
     let hatHeight = faceHeight * 0.6;
     // console.log({hatWidth, hatHeight});
 
+    if (Math.abs(this.hatCurrentXpos - hatWidth) > sizeTreshold) {
+      this.hatCurrentWidth = hatWidth;
+    } else {
+      hatWidth = this.hatCurrentWidth;
+    }
+
+    if (Math.abs(this.hatCurrentHeight - hatHeight) > sizeTreshold) {
+      this.hatCurrentHeight = hatHeight;
+    } else {
+      hatHeight = this.hatCurrentHeight;
+    }
+
+    // ---
+
     let xpos = rightEye.width;
     let ypos = rightEye.height - (hatHeight * 2);
+
+    if (Math.abs(this.hatCurrentXpos - xpos) > posTreshold) {
+      this.hatCurrentXpos = xpos;
+    } else {
+      xpos = this.hatCurrentXpos;
+    }
+
+    if (Math.abs(this.hatCurrentYpos - ypos) > posTreshold) {
+      this.hatCurrentYpos = ypos;
+    } else {
+      ypos = this.hatCurrentYpos;
+    }
 
     this.ctx_.drawImage(this.image2, xpos, ypos, hatWidth, hatHeight);
   }
